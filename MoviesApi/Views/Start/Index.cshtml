@@ -1,0 +1,193 @@
+﻿<html>
+<head>
+    <title>Movies</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" />
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"
+            integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+            crossorigin="anonymous"></script>
+
+    <script>
+
+
+    $(document).ready(function () {
+      getMovieList();
+    });
+
+    var Movie = {
+      id: 0,
+      name: "",
+      rating: "",
+      released: "",
+      plot: ""
+    }
+
+    // Get all movies to display
+    function getMovieList() {
+      // Call Web API to get a list of movies
+      $.ajax({
+        url: '/api/movies/',
+        type: 'GET',
+        dataType: 'json',
+        success: function (movies) {
+          MovieListSuccess(movies);
+        },
+        error: function (request, message, error) {
+          handleError(request, message, error);
+        }
+      });
+    }
+
+    // Display all movies returned from Web API call
+    function MovieListSuccess(movies) {
+      // Iterate over the collection of data
+      $("#mTable tbody").remove();
+      $.each(movies, function (index, movie) {
+        // Add a row to the movie table
+        movieAddRow(movie);
+      });
+    }
+
+    // Add movie row to <table>
+    function movieAddRow(movie) {
+      // First check if a <tbody> tag exists, add one if not
+      if ($("#mTable tbody").length == 0) {
+        $("#mTable").append("<tbody></tbody>");
+      }
+
+      // Append row to <table>
+      $("#mTable tbody").append(
+        movieBuildTableRow(movie));
+    }
+
+    // Build a <tr> for a row of table data
+    function movieBuildTableRow(movie) {
+        var r = "<tr>" +"<td>" + movie.id + "</td>" + "<td><input   class='input-name' type='text' value='" + movie.name + "'/></td>" +
+          "<td><input  class='input-rating'  type='text' value='" + movie.rating + "'/></td>" +
+          "<td><input  class='input-released' type='text' value='" + movie.released + "'/></td>" +
+          "<td><input  class='input-plot' type='text' value='" + movie.plot + "'/></td>" +
+         "<td>" + "<button type='button' " +"onclick='movieUpdate(this);' " +"class='btn btn-warning' " +"data-id='" + movie.id + "' " +
+            "data-name='" + movie.name + "' " +"data-rating='" + movie.rating + "' " +"data-released='" + movie.released + "' " +
+            "data-plot='" + movie.plot + "' " +">" +"<span class='' /> Change" +"</button> " +" <button type='button' " +"onclick='movieDelete(this);'" +"class='btn btn-danger' " +
+        "data-id='" + movie.id + "'>" +"<span class='' />Remove" +
+        "</button>" +
+        "</td>" +
+        "</tr>";
+
+      return r;
+    }
+
+    function AddMovie(item) {
+      var options = {};
+      options.url = "/api/movies";
+      options.type = "POST";
+        var obj = Movie;
+        obj.name = $("#name").val();
+        obj.rating = $("#rating").val();
+        obj.released = $("#released").val();
+        obj.plot = $("#plot").val();
+   
+      options.data = JSON.stringify(obj);
+      options.contentType = "application/json";
+      options.dataType = "html";
+
+      options.success = function (message) {
+        getMovieList();
+        $("#message").html(message);
+      },
+        options.error = function () {
+          $("#message").html("Error while calling the Web API!");
+        };
+      $.ajax(options);
+    }
+
+    function movieUpdate(item) {
+      var id = $(item).data("id");
+        var options = {};
+        options.url = "/api/movies/" + id
+      options.type = "PUT";
+
+        var obj = Movie;
+        obj.id = $(item).data("id");
+        obj.name = $(".input-name", $(item).parent().parent()).val();
+        obj.rating = $(".input-rating", $(item).parent().parent()).val();
+        obj.released = $(".input-released", $(item).parent().parent()).val();
+        obj.plot = $(".input-plot", $(item).parent().parent()).val();
+      options.data = JSON.stringify(obj);
+      options.contentType = "application/json";
+      options.dataType = "html";
+      options.success = function (message) {
+        $("#message").html(message);
+      };
+      options.error = function () {
+        $("#message").html("Error while calling the Web API!");
+      };
+      $.ajax(options);
+    }
+
+    function movieDelete(item) {
+      var id = $(item).data("id");
+      var options = {};
+      options.url = "/api/movies/"
+        + id;
+      options.type = "DELETE";
+      options.dataType = "html";
+      options.success = function (message) {
+        console.log('message= ' + message);
+        $("#message").html(message);
+        getMovieList();
+      };
+      options.error = function () {
+        $("#message").html("Error while calling the Web API!");
+      };
+      $.ajax(options);
+    }
+
+    // Handle exceptions from AJAX calls
+    function handleError(request, message, error) {
+      var message = "";
+      message += "Code: " + request.status + "\n";
+      message += "Text: " + request.statusText + "\n";
+      if (request.responseJSON != null) {
+        message += "Message" + request.responseJSON.Message + "\n";
+      }
+
+      alert(message);
+    }
+    </script>
+</head>
+<body>
+    <div class="col-lg">
+        <form>
+            <label>Movie Name</label>
+            <input class="form-control" id="name" type="text" />
+            <label>Movie Rating</label>
+            <input class="form-control" id="rating" type="text" />
+            <label>Movie Released</label>
+            <input class="form-control" id="released" type="date" />
+            <label>Movie Plot</label>
+            <input class="form-control" id="plot" type="text" />
+            <br />
+            <input class="btn btn-secondary" type="button" id="insert" value="Insert" onclick='AddMovie(this)' />
+        </form>
+    </div>
+    <div class="container text-center justify-center">
+        <h3>My Favorite Movies</h3>
+
+        <table class="table table-bordered table-striped" id="mTable" cellpadding="2">
+            <thead>
+                <tr>
+                    <td> Id </td>
+                    <td> Name </td>
+                    <td> Rating </td>
+                    <td> Released </td>
+                    <td> Plot</td>
+                    <td> </td>
+                </tr>
+
+            </thead>
+        </table>
+        <br />
+        
+    </div>
+</body>
+</html> 
